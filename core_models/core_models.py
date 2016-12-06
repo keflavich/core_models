@@ -34,7 +34,7 @@ def plummer_density(radii, mtot=1.0*u.M_sun, a_scale=0.1*u.pc, zh2=2.8,
     nh2 = (rho / (mh*zh2)).to(u.cm**-3)
     return nh2
 
-def broken_powerlaw(radii, rbreak=1.0*u.pc, power=-2.0, n0=1e5, **kwargs):
+def broken_powerlaw(radii, rbreak=1.0*u.pc, power=-2.0, n0=1e5*u.cm**-3, **kwargs):
     """
     Return the density of a broken power law density profile where
     the central density is flat
@@ -48,7 +48,7 @@ def broken_powerlaw(radii, rbreak=1.0*u.pc, power=-2.0, n0=1e5, **kwargs):
             n = n0 * (radii/rbreak)**power
             return n
     else:
-        narr = np.zeros(radii.shape)
+        narr = u.Quantity(np.zeros(radii.shape), n0.unit)
         narr[radii<rbreak] = n0
         # this was previously
         # narr[r>=rbreak] = n0 * (r/rbreak)**power
