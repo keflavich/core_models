@@ -58,14 +58,39 @@ def broken_powerlaw(radii, rbreak=1.0*u.pc, power=-2.0, n0=1e5*u.cm**-3, **kwarg
         narr[radii>=rbreak] = n0 * (radii[radii>=rbreak]/rbreak)**power
         return narr
 
-def bonnorebert(radii, ncenter=1e5*u.cm**-3, ximax=6.9, viso=0.24*u.km/u.s,
-                zh2=2.8, mh=u.Da):
+#def bonnorebert(radii, ncenter=1e5*u.cm**-3, ximax=6.9, viso=0.24*u.km/u.s,
+#                zh2=2.8, mh=u.Da):
+#    """
+#    approximation to a bonnor-ebert sphere using broken power law
+#    6.9 taken from Alves, Lada, Lada B68 Nature paper 2001
+#    viso is for zh2=2.8, T=20K
+#    """
+#
+#    rbreak = ximax*(viso) / np.sqrt(4*np.pi*constants.G*ncenter*mh*zh2)
+#
+#    return broken_powerlaw(radii, rbreak=rbreak, n0=ncenter, power=-2.0)
+
+def bonnorebert(radii, ncenter=None, mass=None, zh2=2.8, mh=u.Da, ximax=6.9,
+                viso=0.24*u.km/u.s):
     """
-    approximation to a bonnor-ebert sphere using broken power law
-    6.9 taken from Alves, Lada, Lada B68 Nature paper 2001
-    viso is for zh2=2.8, T=20K
+    Approximation from
+    www.am.ub.edu/~robert/Documents/bonnor-ebert.pdf
+
     """
 
-    rbreak = ximax*(viso) / np.sqrt(4*np.pi*constants.G*ncenter*mh*zh2)
+    if mass is None and ncenter is None:
+        raise ValueError("Must specify one of `mass` or `ncenter`")
+    elif ncenter is not None:
+        rho_center = ncenter * zh2 * mh
+        r_center = ximax*(viso) / np.sqrt(4*np.pi*constants.G*ncenter*mh*zh2)
+    elif mass is not None:
+        rho_outer = mass / (1.18 * viso**3) * constants.G**1.5
+        r_out = mass / (2.42 * viso**2 / constants.G)
+        external_pressure = 1.41 * viso**8 / constants.G**3 / mass**2
 
-    return broken_powerlaw(radii, rbreak=rbreak, n0=ncenter)
+        rho_center = rho_outer * (1+(r_out/(2.88*r_center)))**1.47
+        r_center = ximax*(viso) / np.sqrt(4*np.pi*constants.G*rho_center)
+    else:
+        raise ValueError('not possible')
+
+    return rho_center * (1+(radii/(2.88*r_center))**2)**-1.47
